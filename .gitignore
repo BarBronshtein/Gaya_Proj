@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Docker volumes / scratch caches
+.scratch/home/
+.scratch/nuget-cache/
+.local/
+.nuget/
+
