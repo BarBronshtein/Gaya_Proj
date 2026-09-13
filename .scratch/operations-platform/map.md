@@ -20,6 +20,7 @@ Deliver a production-grade .NET 8 Web API and Angular client implementing Part A
 - [0003: OpenTelemetry and OpenObserve Observability](file:///Users/admin/Projects/Gaya-project/docs/adr/0003-opentelemetry-openobserve.md) — OTLP instrumentation in .NET 8 exported to OpenObserve Docker service + custom DB audit tables.
 - [0004: Angular Client Architecture](file:///Users/admin/Projects/Gaya-project/docs/adr/0004-angular-client-architecture.md) — Calculator view with bonus metrics plus Operations Hub for live operation management.
 - [01 Scaffold Solution and Docker Infrastructure](file:///Users/admin/Projects/Gaya-project/.scratch/operations-platform/issues/01-scaffold-solution-and-docker.md) — .NET 8 Clean Architecture solution, Angular 18 standalone client, and Docker Compose with SQL Server 2022 and OpenObserve.
+- [02 Database Schema and Dapper Repositories](file:///Users/admin/Projects/Gaya-project/.scratch/operations-platform/issues/02-database-schema-and-dapper-repositories.md) — Relational schema DDL, Dapper repositories, database bootstrapping with retry logic, and 11 default seeded operations.
 
 ## Not yet specified
 
