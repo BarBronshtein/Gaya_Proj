@@ -1,5 +1,12 @@
 # Gaya Operations Platform 🔷
 
+[![CI Pipeline](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/ci.yml/badge.svg)](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/ci.yml)
+[![CD & Release Pipeline](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/cd.yml/badge.svg)](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/cd.yml)
+[![CodeQL Analysis](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/codeql.yml/badge.svg)](https://github.com/BarBronshtein/Gaya_Proj/actions/workflows/codeql.yml)
+![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+![Angular 18](https://img.shields.io/badge/Angular-18.2-DD0031?logo=angular)
+![Tests](https://img.shields.io/badge/Tests-253%20Passed-brightgreen)
+
 A production-grade, extensible 2-operand computational, persistence, and integration platform engineered with **.NET 8 (Clean Architecture & Dapper Micro-ORM)** and modern **Angular 18 (Standalone Components & Signals)**.
 
 The platform provides a runtime-extensible computation engine, sub-millisecond Dapper persistence on Microsoft SQL Server 2022, automated execution metrics (3 most recent executions + UTC monthly counts), full HTTP audit logging, RFC 7807 global exception handling, OpenTelemetry observability exported to OpenObserve, and a fully containerized **Docker Compose** stack.
@@ -577,6 +584,101 @@ The required compliance marker `A34D` is permanently embedded in the calculation
 
 ---
 
+## 🚀 CI/CD Pipeline (GitHub Actions)
+
+The repository is equipped with fully automated **Continuous Integration (CI)**, **Continuous Deployment (CD)**, and **CodeQL Security Analysis** workflows on GitHub Actions.
+
+### Pipeline Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            GitHub Actions CI Pipeline                       │
+│                                                                             │
+│  ┌───────────────────────┐  ┌───────────────────────┐                       │
+│  │     Backend CI        │  │      Frontend CI      │                       │
+│  │ - .NET 8 SDK Setup    │  │ - Node 20 / npm ci    │                       │
+│  │ - NuGet Restore Cache │  │ - Angular Prod Build  │                       │
+│  │ - dotnet build        │  │ - Karma Headless Test │                       │
+│  │ - 253 Unit/E2E Tests  │  │ - Coverage Upload     │                       │
+│  │ - "A34D" Code Marker  │  │ - Dist Artifact       │                       │
+│  │ - API Publish Build   │  └───────────┬───────────┘                       │
+│  └───────────┬───────────┘              │                                   │
+│              └──────────────┬───────────┘                                   │
+│                             │                                               │
+│              ┌──────────────▼──────────────┐                                │
+│              │      Docker Verification    │                                │
+│              │ - Gaya.Api Image Build      │                                │
+│              │ - Angular Client Image Build│                                │
+│              │ - Compose Config Validation │                                │
+│              └──────────────┬──────────────┘                                │
+│                             │                                               │
+│              ┌──────────────▼──────────────┐                                │
+│              │   E2E Container Smoke Test  │                                │
+│              │ - Full Compose Stack Up     │                                │
+│              │ - Live API Operations Check │                                │
+│              │ - POST /api/calculate Check │                                │
+│              │ - Client Nginx Delivery     │                                │
+│              └─────────────────────────────┘                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                         (On Push to main / Tag v*)
+                                      │
+┌─────────────────────────────────────▼───────────────────────────────────────┐
+│                            GitHub Actions CD Pipeline                       │
+│                                                                             │
+│  ┌─────────────────────────────────┐  ┌──────────────────────────────────┐  │
+│  │    GHCR Container Publishing    │  │    Release Asset Packaging       │  │
+│  │ - Multi-tag (sha, semver, latest)│  │ - Self-Contained API Binaries    │  │
+│  │ - ghcr.io/<repo>/api            │  │ - Compiled Angular Assets        │  │
+│  │ - ghcr.io/<repo>/client         │  │ - GitHub Releases (.tar.gz, .zip)│  │
+│  └─────────────────────────────────┘  └──────────────────────────────────┘  │
+│                                     │                                       │
+│                       ┌─────────────▼─────────────┐                         │
+│                       │   Target Environment Gate │                         │
+│                       │   (Staging / Production)  │                         │
+│                       └───────────────────────────┘                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Continuous Integration (`.github/workflows/ci.yml`)
+- **Triggers**: Pull requests and commits pushed to `main`, `master`, and `develop` branches; manual `workflow_dispatch`.
+- **Backend Job**:
+  - Sets up .NET 8.0 SDK with NuGet package caching.
+  - Compiles the entire solution (`Gaya.OperationsPlatform.sln`) in `Release` configuration.
+  - Runs all 253 Unit and E2E Tests with `XPlat Code Coverage` and `.trx` test report generation.
+  - Verifies presence of mandatory compliance code comment `A34D`.
+  - Publishes `Gaya.Api` binaries and uploads build artifacts.
+- **Frontend Job**:
+  - Sets up Node.js 20 with npm dependency caching.
+  - Executes `npm ci` and builds the production Angular bundle.
+  - Runs headless Jasmine/Karma unit tests via ChromeHeadless (`ChromeHeadlessCI` with `--no-sandbox` flags).
+  - Uploads compiled client distribution assets and code coverage reports.
+- **Docker Verification Job**:
+  - Sets up Docker Buildx with GitHub Actions layer caching (`type=gha`).
+  - Builds both `src/Gaya.Api/Dockerfile` and `client/Dockerfile`.
+  - Validates `docker-compose.yml` configuration integrity.
+- **E2E Container Smoke Test Job**:
+  - Launches the containerized environment (`docker compose up -d --build`).
+  - Verifies SQL Server, API health, `GET /api/operations`, calculation pipeline `POST /api/calculate`, and Nginx frontend client delivery.
+
+### 2. Continuous Deployment & Releases (`.github/workflows/cd.yml`)
+- **Triggers**: Direct push to `main`, semantic release tags (`v*.*.*`), or manual `workflow_dispatch` (selecting staging/production).
+- **Container Registry Publishing**:
+  - Builds and tags production container images for GitHub Container Registry (`ghcr.io`).
+  - Tags with commit SHA, semver, and `latest` for default branch.
+- **Release Bundling**:
+  - Generates standalone `.tar.gz` and `.zip` distribution packages containing published API binaries, static Angular client files, and deployment manifests.
+  - Creates automated GitHub Releases with generated changelogs.
+- **Deployment Environment**:
+  - Orchestrates deployments across targeted environments (staging / production) with gate approvals.
+
+### 3. Security Analysis (`.github/workflows/codeql.yml`)
+- **Triggers**: Weekly cron and PR/push events.
+- **Languages**: Automated CodeQL static analysis for `csharp` and `javascript-typescript`.
+
+---
+
 ## 🔒 License & Integrity Notice
 
 All implementations are genuine and built from scratch adhering to Clean Architecture standards. Hardcoded outputs or mock bypasses are strictly prohibited. Validated and verified by the Gaya Operations Engineering Team.
+

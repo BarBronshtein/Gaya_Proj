@@ -1,0 +1,230 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # ================================================================
+  # Job 1: .NET 8 Backend Build, Test Suite & Static Verification
+  # ================================================================
+  backend-ci:
+    name: Backend CI (.NET 8 Build & Test Suite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'nuget.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Dependencies
+        run: dotnet restore Gaya.OperationsPlatform.sln
+
+      - name: Build Solution (Release)
+        run: dotnet build Gaya.OperationsPlatform.sln --configuration Release --no-restore
+
+      - name: Run Unit & E2E Tests (with Coverage & TRX logger)
+        run: >
+          dotnet test Gaya.OperationsPlatform.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=backend-test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Verify Mandatory Marker "A34D"
+        run: |
+          echo "Verifying presence of mandatory marker A34D in codebase..."
+          grep -rn "A34D" src/
+          echo "Marker A34D successfully verified."
+
+      - name: Upload Backend Test Results (TRX)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: ./TestResults/*.trx
+          retention-days: 14
+
+      - name: Upload Backend Code Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-code-coverage
+          path: ./TestResults/**/coverage.cobertura.xml
+          retention-days: 14
+
+      - name: Publish Gaya.Api Artifacts
+        run: dotnet publish src/Gaya.Api/Gaya.Api.csproj -c Release -o ./publish/api /p:UseAppHost=false
+
+      - name: Upload Published API Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-binaries
+          path: ./publish/api
+          retention-days: 7
+
+  # ================================================================
+  # Job 2: Angular 18 Frontend CI (Build, Typecheck & Karma Tests)
+  # ================================================================
+  frontend-ci:
+    name: Frontend CI (Angular 18 Build & Karma Tests)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Build Production Angular SPA
+        run: npm run build -- --configuration production
+
+      - name: Run Headless Karma Unit Tests
+        run: npm run test:ci
+
+      - name: Upload Client Production Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-production-bundle
+          path: client/dist/client/browser
+          retention-days: 7
+
+      - name: Upload Client Test Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-code-coverage
+          path: client/coverage
+          retention-days: 14
+
+  # ================================================================
+  # Job 3: Docker Images & Compose Validation
+  # ================================================================
+  docker-ci:
+    name: Docker Container & Compose Verification
+    runs-on: ubuntu-latest
+    needs: [ backend-ci, frontend-ci ]
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/Gaya.Api/Dockerfile
+          push: false
+          tags: gaya-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: false
+          tags: gaya-client:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate Docker Compose Configuration
+        run: docker compose config
+
+  # ================================================================
+  # Job 4: Containerized End-to-End Smoke Test
+  # ================================================================
+  e2e-smoke-test:
+    name: Containerized End-to-End Smoke Test
+    runs-on: ubuntu-latest
+    needs: [ docker-ci ]
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Launch Container Stack
+        run: docker compose up -d --build
+
+      - name: Wait for API and Database Health
+        run: |
+          echo "Waiting for services to initialize..."
+          for i in {1..30}; do
+            if curl -s http://localhost:5000/api/operations >/dev/null 2>&1; then
+              echo "Gaya API is up and responding!"
+              break
+            fi
+            echo "Waiting for API... ($i/30)"
+            sleep 2
+          done
+
+      - name: Verify REST API Operations Endpoint
+        run: |
+          echo "Querying GET /api/operations..."
+          OPS_OUTPUT=$(curl -sf http://localhost:5000/api/operations)
+          echo "$OPS_OUTPUT"
+          echo "$OPS_OUTPUT" | grep -q "add" || { echo "Error: 'add' operation missing"; exit 1; }
+          echo "GET /api/operations verified successfully."
+
+      - name: Verify Calculation & Persistence Pipeline (POST /api/calculate)
+        run: |
+          echo "Posting calculation request..."
+          CALC_OUTPUT=$(curl -sf -X POST http://localhost:5000/api/calculate \
+            -H "Content-Type: application/json" \
+            -d '{"operationKey":"add","fieldA":"10.5","fieldB":"4.5"}')
+          echo "$CALC_OUTPUT"
+          echo "$CALC_OUTPUT" | grep -q '"result":"15"' || { echo "Error: Unexpected calculation result"; exit 1; }
+          echo "POST /api/calculate verified successfully."
+
+      - name: Verify Angular Client Delivery (Nginx Port 4200)
+        run: |
+          echo "Querying frontend client..."
+          CLIENT_HTML=$(curl -sf http://localhost:4200/)
+          echo "$CLIENT_HTML" | grep -q "<app-root" || { echo "Error: Frontend root element missing"; exit 1; }
+          echo "Frontend client verified successfully."
+
+      - name: Teardown Stack
+        if: always()
+        run: docker compose down -v
