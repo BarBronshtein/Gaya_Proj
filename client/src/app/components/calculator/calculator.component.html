@@ -1,0 +1,305 @@
+<div class="calculator-container">
+  <!-- Page Header with Monthly Counter Badge -->
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Operations Calculator / מחשבון פעולות</h1>
+      <p class="page-subtitle">
+        Execute dynamic 2-operand operations with sub-millisecond precision, audit history, and real-time execution analytics.
+      </p>
+    </div>
+
+    <!-- Monthly Counter Badge for selected operation -->
+    <div class="metrics-badge-card" id="monthly-count-badge" [class.pulse]="!isLoadingMetrics()">
+      <div class="badge-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="badge-info">
+        <span class="badge-label">Monthly Executions (Israel Time)</span>
+        <span class="badge-value">
+          @if (isLoadingMetrics()) {
+            <span class="loading-dots">...</span>
+          } @else {
+            {{ monthlyExecutionCount() }}
+          }
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="alert alert-error" role="alert">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-content">
+        <strong>Error:</strong> {{ errorMessage() }}
+      </div>
+      <button type="button" class="alert-close" (click)="errorMessage.set(null)" aria-label="Dismiss">×</button>
+    </div>
+  }
+
+  <!-- Main Calculator Grid -->
+  <div class="calculator-layout">
+    <!-- Left Column: Form & Result -->
+    <div class="calculator-main-card">
+      <div class="card-header">
+        <div class="header-with-badge">
+          <h2 class="card-title">Universal 2-Operand Execution</h2>
+          @if (selectedOperation(); as op) {
+            <span class="category-pill" [ngClass]="getCategoryBadgeClass(op.category)">
+              {{ op.category }}
+            </span>
+          }
+        </div>
+        @if (selectedOperation()?.description; as desc) {
+          <p class="operation-description">{{ desc }}</p>
+        }
+      </div>
+
+      <form [formGroup]="calcForm" (ngSubmit)="onCalculate()" class="calculator-form">
+        <!-- Operation Selector -->
+        <div class="form-group">
+          <label for="operation-select" class="form-label">
+            <span>Select Operation (בחר פעולה):</span>
+          </label>
+          <div class="select-wrapper">
+            <select
+              id="operation-select"
+              formControlName="operationKey"
+              class="form-control select-control"
+              (change)="onOperationChange($event)"
+              [disabled]="isLoadingOperations()">
+              @if (isLoadingOperations()) {
+                <option value="">Loading operations from server...</option>
+              } @else {
+                @for (group of categories(); track group.category) {
+                  <optgroup [label]="group.category">
+                    @for (op of group.items; track op.key) {
+                      <option [value]="op.key">
+                        {{ op.displayName }} ({{ op.key }})
+                      </option>
+                    }
+                  </optgroup>
+                }
+              }
+            </select>
+          </div>
+          @if (selectedOperation()?.ruleTemplate; as tmpl) {
+            <span class="rule-hint">Rule Expression: <code>{{ tmpl }}</code></span>
+          }
+        </div>
+
+        <!-- Dynamic Contextual Inputs Grid -->
+        <div class="operands-grid">
+          <!-- Field A Input -->
+          <div class="form-group">
+            <label for="field-a-input" class="form-label contextual-label">
+              <span class="operand-tag">A</span>
+              <span class="prompt-text">{{ fieldALabel() }}</span>
+              <span class="required-star">*</span>
+            </label>
+            <input
+              type="text"
+              id="field-a-input"
+              formControlName="fieldA"
+              class="form-control"
+              [placeholder]="'Enter ' + fieldALabel()"
+              [class.is-invalid]="calcForm.get('fieldA')?.invalid && calcForm.get('fieldA')?.touched" />
+            @if (calcForm.get('fieldA')?.invalid && calcForm.get('fieldA')?.touched) {
+              <div class="validation-error">
+                {{ fieldALabel() }} is required.
+              </div>
+            }
+          </div>
+
+          <!-- Field B Input -->
+          <div class="form-group">
+            <label for="field-b-input" class="form-label contextual-label">
+              <span class="operand-tag">B</span>
+              <span class="prompt-text">{{ fieldBLabel() }}</span>
+              <span class="required-star">*</span>
+            </label>
+            <input
+              type="text"
+              id="field-b-input"
+              formControlName="fieldB"
+              class="form-control"
+              [placeholder]="'Enter ' + fieldBLabel()"
+              [class.is-invalid]="calcForm.get('fieldB')?.invalid && calcForm.get('fieldB')?.touched" />
+            @if (calcForm.get('fieldB')?.invalid && calcForm.get('fieldB')?.touched) {
+              <div class="validation-error">
+                {{ fieldBLabel() }} is required.
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="presets-container">
+          <span class="presets-label">Quick Presets:</span>
+          <div class="presets-chips">
+            <button
+              type="button"
+              class="preset-chip"
+              (click)="applyPreset('add', '42', '58')">
+              ➕ Add (42 + 58)
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              (click)="applyPreset('multiply', '12', '9')">
+              ✖️ Multiply (12 * 9)
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              (click)="applyPreset('weather', '32.0853', '34.7818')">
+              ⛅ Tel Aviv Weather
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              (click)="applyPreset('concat', 'Gaya', 'Platform')">
+              🔗 Concat (Gaya + Platform)
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            id="calculate-btn"
+            class="btn btn-primary btn-calculate"
+            [disabled]="isCalculating() || calcForm.invalid">
+            @if (isCalculating()) {
+              <span class="spinner" aria-hidden="true"></span>
+              <span>Executing Calculation...</span>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Calculate / חשב</span>
+            }
+          </button>
+        </div>
+      </form>
+
+      <!-- Calculation Result Card -->
+      @if (calculationResult(); as res) {
+        <div class="result-card" id="calculation-result-card">
+          <div class="result-header">
+            <div class="result-status">
+              <span class="status-dot"></span>
+              <span class="status-title">Calculation Result / תוצאה</span>
+            </div>
+            <div class="result-badges">
+              <span class="duration-badge">
+                ⏱️ {{ res.durationMs }} ms
+              </span>
+              <span class="timestamp-badge">
+                📅 {{ formatDate(res.executedAt) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="result-body">
+            <div class="result-display-wrapper">
+              <div class="result-value" id="result-value">{{ res.result }}</div>
+              <button
+                type="button"
+                class="copy-btn"
+                (click)="copyResult()"
+                [title]="copied() ? 'Copied!' : 'Copy result'">
+                @if (copied()) {
+                  <span class="copied-indicator">✓ Copied</span>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                }
+              </button>
+            </div>
+
+            <div class="result-operands-echo">
+              <span>Operation: <strong>{{ res.operationKey }}</strong></span>
+              <span>•</span>
+              <span>{{ fieldALabel() }}: <code>{{ res.fieldA }}</code></span>
+              <span>•</span>
+              <span>{{ fieldBLabel() }}: <code>{{ res.fieldB }}</code></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Right Column: Recent Executions & Info -->
+    <div class="calculator-sidebar">
+      <!-- 3 Most Recent Executions Card -->
+      <div class="sidebar-card">
+        <div class="card-header">
+          <div class="header-with-badge">
+            <h3 class="card-title">Recent Executions / היסטוריית ביצועים</h3>
+            <span class="recent-count-pill">Last 3</span>
+          </div>
+          <p class="sidebar-hint">
+            3 Most recent executions for <strong>{{ selectedOperationKey() || 'selected operation' }}</strong>
+          </p>
+        </div>
+
+        <div class="table-container">
+          @if (recentExecutions().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">📜</div>
+              <p class="empty-text">No executions recorded yet for this operation.</p>
+              <span class="empty-subtext">Click Calculate to run your first execution.</span>
+            </div>
+          } @else {
+            <table class="data-table" id="recent-executions-table">
+              <thead>
+                <tr>
+                  <th>Field A</th>
+                  <th>Field B</th>
+                  <th>Result</th>
+                  <th>Duration</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of recentExecutions(); track item.id || $index) {
+                  <tr>
+                    <td class="cell-operand" [title]="item.fieldA">{{ item.fieldA }}</td>
+                    <td class="cell-operand" [title]="item.fieldB">{{ item.fieldB }}</td>
+                    <td class="cell-result">
+                      <code class="result-code">{{ item.result }}</code>
+                    </td>
+                    <td class="cell-duration">{{ item.durationMs }} ms</td>
+                    <td class="cell-time" [title]="formatDate(item.executedAt)">
+                      {{ formatDate(item.executedAt) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Quick Link to Operations Hub -->
+      <div class="sidebar-card quick-create-card">
+        <div class="quick-create-content">
+          <h4>Need a custom operation?</h4>
+          <p>Define new arithmetic, string, or formula operations in real-time without server restarts.</p>
+          <a routerLink="/operations-hub" class="btn btn-secondary btn-sm">
+            Open Operations Hub →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

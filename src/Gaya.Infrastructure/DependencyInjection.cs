@@ -8,9 +8,24 @@ namespace Gaya.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration? configuration = null)
     {
-        services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+        if (configuration != null)
+        {
+            services.AddSingleton(configuration);
+        }
+
+        services.AddSingleton<IDbConnectionFactory>(sp =>
+        {
+            var config = configuration ?? sp.GetService<IConfiguration>();
+            if (config != null)
+            {
+                return new DbConnectionFactory(config);
+            }
+
+            return new DbConnectionFactory(new ConfigurationBuilder().Build());
+        });
+
         services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
 
         services.AddScoped<IOperationRepository, OperationRepository>();
@@ -19,5 +34,10 @@ public static class DependencyInjection
         services.AddScoped<ISystemErrorRepository, SystemErrorRepository>();
 
         return services;
+    }
+
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    {
+        return services.AddInfrastructure(null);
     }
 }

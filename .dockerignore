@@ -1,0 +1,13 @@
+**/.git
+**/.gitignore
+**/.vscode
+**/.agents
+**/.scratch
+**/bin
+**/obj
+**/TestResults
+**/node_modules
+client/dist
+client/node_modules
+.DS_Store
+*.md

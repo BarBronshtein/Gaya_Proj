@@ -1,0 +1,277 @@
+<div class="hub-container">
+  <!-- Header -->
+  <header class="hub-header">
+    <div class="header-content">
+      <div class="header-icon">⚙️</div>
+      <div>
+        <h1 class="page-title">Operations Hub / מרכז ניהול פעולות</h1>
+        <p class="subtitle">
+          Define, configure, and manage dynamic runtime calculation rules without server restart.
+        </p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="stat-num">{{ operations().length }}</span>
+        <span class="stat-lbl">Registered Operations</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Messages -->
+  @if (successMessage()) {
+    <div class="alert alert-success" role="alert">
+      <span class="alert-icon">✅</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error" role="alert">
+      <span class="alert-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Add New Operation Form -->
+  <div class="card add-card">
+    <div class="card-title">
+      <h3>➕ Define New Dynamic Operation (הוספת פעולה בזמן ריצה)</h3>
+      <div class="quick-examples">
+        <span class="example-label">Quick Templates:</span>
+        <button type="button" class="btn-chip" (click)="fillExample('discount')">🏷️ Discount</button>
+        <button type="button" class="btn-chip" (click)="fillExample('celsius')">🌡️ Celsius/Fahrenheit</button>
+        <button type="button" class="btn-chip" (click)="fillExample('greeting')">💬 Greeting</button>
+        <button type="button" class="btn-chip" (click)="fillExample('hypotenuse')">📐 Hypotenuse</button>
+      </div>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="op-form">
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label class="form-label">Key (מזהה ייחודי) *</label>
+          <input
+            type="text"
+            class="form-input"
+            id="op-key-input"
+            placeholder="e.g. discount-calc"
+            [(ngModel)]="newOp.key"
+            name="key"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Display Name (שם תצוגה) *</label>
+          <input
+            type="text"
+            class="form-input"
+            id="op-name-input"
+            placeholder="e.g. Discount Calculator"
+            [(ngModel)]="newOp.displayName"
+            name="displayName"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category (קטגוריה)</label>
+          <select class="form-select" id="op-cat-select" [(ngModel)]="newOp.category" name="category">
+            @for (cat of categories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span>Rule Template / Expression (תבנית כלל) *:</span>
+          <small class="rule-hint">Use A and B for variables (e.g. <code>A * (1 - (B / 100))</code> or <code>sqrt(A*A + B*B)</code>)</small>
+        </label>
+        <input
+          type="text"
+          class="form-input code-font"
+          id="op-rule-input"
+          placeholder="e.g. A * (1 - (B / 100)) or {A} - {B}"
+          [(ngModel)]="newOp.ruleTemplate"
+          name="ruleTemplate"
+          required
+        />
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Field A Prompt (תווית שדה א') *</label>
+          <input
+            type="text"
+            class="form-input"
+            id="field-a-prompt-input"
+            placeholder="e.g. Original Price"
+            [(ngModel)]="newOp.fieldAPrompt"
+            name="fieldAPrompt"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Field B Prompt (תווית שדה ב') *</label>
+          <input
+            type="text"
+            class="form-input"
+            id="field-b-prompt-input"
+            placeholder="e.g. Discount Percentage"
+            [(ngModel)]="newOp.fieldBPrompt"
+            name="fieldBPrompt"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description (תיאור הפעולה)</label>
+        <input
+          type="text"
+          class="form-input"
+          id="op-desc-input"
+          placeholder="Brief explanation of the calculation logic..."
+          [(ngModel)]="newOp.description"
+          name="description"
+        />
+      </div>
+
+      <div class="form-footer">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="newOp.isActive" name="isActive" id="op-active-check" />
+          <span>Activate Operation immediately (פעיל)</span>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="resetForm()">Reset Form</button>
+          <button type="submit" id="create-op-btn" class="btn btn-primary" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="spinner"></span>
+              <span>Saving...</span>
+            } @else {
+              <span>💾 Save &amp; Register Operation</span>
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Operations Search & Filter & Table -->
+  <div class="card table-card">
+    <div class="card-title-bar">
+      <div class="table-heading">
+        <h3>📋 Registered Operations ({{ filteredOperations().length }} of {{ operations().length }})</h3>
+      </div>
+
+      <div class="filter-controls">
+        <div class="search-wrap">
+          <input
+            type="text"
+            class="search-field"
+            placeholder="Search by key, name, rule..."
+            [value]="searchTerm()"
+            (input)="searchTerm.set($any($event.target).value)" />
+          @if (searchTerm()) {
+            <button class="clear-btn" (click)="searchTerm.set('')">×</button>
+          }
+        </div>
+
+        <div class="cat-filter-chips">
+          <button
+            type="button"
+            class="chip-filter"
+            [class.active]="selectedCategory() === 'ALL'"
+            (click)="selectedCategory.set('ALL')">
+            All
+          </button>
+          @for (cat of categories; track cat) {
+            <button
+              type="button"
+              class="chip-filter"
+              [class.active]="selectedCategory() === cat"
+              (click)="selectedCategory.set(cat)">
+              {{ cat }}
+            </button>
+          }
+        </div>
+
+        <button class="btn btn-secondary btn-sm" (click)="loadOperations()" [disabled]="isLoading()">
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="ops-table" id="operations-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Name (שם)</th>
+            <th>Category</th>
+            <th>Rule Template (תבנית)</th>
+            <th>Prompts (שדה א' / ב')</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (filteredOperations().length === 0) {
+            <tr>
+              <td colspan="7" class="empty-cell">
+                No operations found matching your filter criteria.
+              </td>
+            </tr>
+          }
+          @for (op of filteredOperations(); track op.key) {
+            <tr [class.inactive-row]="!op.isActive">
+              <td class="key-cell"><code>{{ op.key }}</code></td>
+              <td class="name-cell">
+                <strong>{{ op.displayName }}</strong>
+                @if (op.description) {
+                  <small class="row-desc">{{ op.description }}</small>
+                }
+              </td>
+              <td>
+                <span class="category-pill" [ngClass]="getCategoryBadgeClass(op.category)">
+                  {{ op.category }}
+                </span>
+              </td>
+              <td class="rule-cell"><code>{{ op.ruleTemplate || '(Built-in)' }}</code></td>
+              <td class="prompts-cell">{{ op.fieldAPrompt }} / {{ op.fieldBPrompt }}</td>
+              <td>
+                <span class="status-badge" [class.status-active]="op.isActive" [class.status-inactive]="!op.isActive">
+                  {{ op.isActive ? 'Active' : 'Disabled' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    type="button"
+                    class="btn-toggle"
+                    [class.btn-deactivate]="op.isActive"
+                    [class.btn-activate]="!op.isActive"
+                    (click)="toggleStatus(op)"
+                  >
+                    {{ op.isActive ? 'Disable' : 'Enable' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-xs"
+                    (click)="testInCalculator(op.key)"
+                  >
+                    Calculate →
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
