@@ -167,6 +167,7 @@ public class InMemoryOperationRepository : IOperationRepository
                 Description = "ספירת מספר הפעמים שתו מסוים מופיע בתוך המחרוזת",
                 IsActive = true
             },
+            // External API Operations
             new()
             {
                 Key = "weather",
@@ -176,6 +177,50 @@ public class InMemoryOperationRepository : IOperationRepository
                 FieldAPrompt = "קו רוחב (Latitude)",
                 FieldBPrompt = "קו אורך (Longitude)",
                 Description = "שליפת נתוני מזג אוויר חיים מ-Open-Meteo API לפי קואורדינטות",
+                IsActive = true
+            },
+            new()
+            {
+                Key = "crypto-price",
+                DisplayName = "מחירי קריפטו חיים (CoinGecko)",
+                Category = OperationCategory.ExternalApi,
+                RuleTemplate = "https://api.coingecko.com/api/v3/simple/price?ids={A}&vs_currencies={B}",
+                FieldAPrompt = "מזהה מטבע (e.g. bitcoin, ethereum)",
+                FieldBPrompt = "מטבע יעד (e.g. usd, ils, eur)",
+                Description = "שליפת מחירי מטבעות קריפטוגרפיים בזמן אמת מ-CoinGecko REST API",
+                IsActive = true
+            },
+            new()
+            {
+                Key = "predict-age",
+                DisplayName = "חיזוי גיל לפי שם (Agify)",
+                Category = OperationCategory.ExternalApi,
+                RuleTemplate = "https://api.agify.io/?name={A}&country_id={B}",
+                FieldAPrompt = "שם פרטי (e.g. michael)",
+                FieldBPrompt = "קוד מדינה (e.g. IL, US)",
+                Description = "חיזוי גיל דמוגרפי לפי שם פרטי וקוד מדינה מ-Agify REST API",
+                IsActive = true
+            },
+            new()
+            {
+                Key = "exchange-rate",
+                DisplayName = "שערי חליפין (Forex Rates)",
+                Category = OperationCategory.ExternalApi,
+                RuleTemplate = "https://open.er-api.com/v6/latest/{A}",
+                FieldAPrompt = "מטבע בסיס (e.g. USD, EUR, ILS)",
+                FieldBPrompt = "לא בשימוש (0)",
+                Description = "שערי חליפין בינלאומיים בזמן אמת מ-Exchange Rate API",
+                IsActive = true
+            },
+            new()
+            {
+                Key = "cat-fact",
+                DisplayName = "עובדות חתולים (Cat Fact)",
+                Category = OperationCategory.ExternalApi,
+                RuleTemplate = "https://catfact.ninja/fact?max_length={A}",
+                FieldAPrompt = "אורך מקסימלי (e.g. 50, 100)",
+                FieldBPrompt = "לא בשימוש (0)",
+                Description = "שליפת עובדה רנדומלית על חתולים מ-CatFact API",
                 IsActive = true
             }
         };

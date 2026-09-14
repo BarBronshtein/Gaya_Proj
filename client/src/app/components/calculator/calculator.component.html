@@ -116,7 +116,7 @@
 
         <!-- City Presets for Weather Operation -->
         @if (isWeatherOperation()) {
-          <div class="city-presets-bar">
+          <div class="city-presets-bar" id="city-presets-bar">
             <span class="city-presets-title">📍 City Coordinate Presets (קואורדינטות ערים):</span>
             <div class="city-chips">
               @for (city of cityPresets; track city.name) {
@@ -127,6 +127,25 @@
                   (click)="applyCityPreset(city.lat, city.lon)"
                   [title]="city.name + ' (' + city.lat + ', ' + city.lon + ')'">
                   {{ city.flag }} {{ city.name }} ({{ city.hebrew }})
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Contextual External API Example Presets (when not weather) -->
+        @if (isExternalApi() && !isWeatherOperation() && currentApiPresets().length > 0) {
+          <div class="api-presets-bar" id="api-presets-bar">
+            <span class="api-presets-title">💡 Example Request Presets (דוגמאות מוכנות לשליפה):</span>
+            <div class="api-chips">
+              @for (preset of currentApiPresets(); track preset.label) {
+                <button
+                  type="button"
+                  class="api-chip"
+                  [class.api-chip-active]="calcForm.get('fieldA')?.value === preset.fieldA && calcForm.get('fieldB')?.value === preset.fieldB"
+                  (click)="applyApiPreset(preset.fieldA, preset.fieldB)"
+                  [title]="preset.description || (preset.label + ' (' + preset.fieldA + ', ' + preset.fieldB + ')')">
+                  {{ preset.label }}
                 </button>
               }
             </div>
@@ -198,19 +217,37 @@
               type="button"
               class="preset-chip preset-chip-api"
               (click)="applyPreset('weather', '32.0853', '34.7818')">
-              ⛅ Tel Aviv Weather
+              ⛅ Tel Aviv Weather (API)
             </button>
             <button
               type="button"
               class="preset-chip preset-chip-api"
               (click)="applyPreset('weather', '31.7683', '35.2137')">
-              ⛅ Jerusalem Weather
+              ⛅ Jerusalem Weather (API)
             </button>
             <button
               type="button"
               class="preset-chip preset-chip-api"
-              (click)="applyPreset('weather', '40.7128', '-74.0060')">
-              ⛅ New York Weather
+              (click)="applyPreset('crypto-price', 'bitcoin', 'usd')">
+              🪙 Bitcoin / USD (API)
+            </button>
+            <button
+              type="button"
+              class="preset-chip preset-chip-api"
+              (click)="applyPreset('predict-age', 'michael', 'IL')">
+              🔮 Predict Age (API)
+            </button>
+            <button
+              type="button"
+              class="preset-chip preset-chip-api"
+              (click)="applyPreset('exchange-rate', 'USD', '0')">
+              💱 Forex Rates (API)
+            </button>
+            <button
+              type="button"
+              class="preset-chip preset-chip-api"
+              (click)="applyPreset('cat-fact', '50', '0')">
+              🐱 Cat Fact (API)
             </button>
             <button
               type="button"

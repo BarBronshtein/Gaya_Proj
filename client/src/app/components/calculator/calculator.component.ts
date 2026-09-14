@@ -22,6 +22,13 @@ export interface CityPreset {
   flag: string;
 }
 
+export interface ApiPreset {
+  label: string;
+  fieldA: string;
+  fieldB: string;
+  description?: string;
+}
+
 @Component({
   selector: 'app-calculator',
   standalone: true,
@@ -59,6 +66,48 @@ export class CalculatorComponent implements OnInit {
     { name: 'Tokyo', hebrew: 'טוקיו', lat: '35.6762', lon: '139.6503', flag: '🇯🇵' },
     { name: 'Paris', hebrew: 'פריז', lat: '48.8566', lon: '2.3522', flag: '🇫🇷' }
   ];
+
+  readonly externalApiPresets: Record<string, ApiPreset[]> = {
+    'crypto-price': [
+      { label: '🪙 Bitcoin / USD', fieldA: 'bitcoin', fieldB: 'usd', description: 'Bitcoin price in USD' },
+      { label: '🪙 Ethereum / EUR', fieldA: 'ethereum', fieldB: 'eur', description: 'Ethereum price in EUR' },
+      { label: '🪙 Solana / ILS', fieldA: 'solana', fieldB: 'ils', description: 'Solana price in ILS' },
+      { label: '🪙 Dogecoin / USD', fieldA: 'dogecoin', fieldB: 'usd', description: 'Dogecoin price in USD' }
+    ],
+    'predict-age': [
+      { label: '🔮 Michael (IL)', fieldA: 'michael', fieldB: 'IL', description: 'Age prediction for Michael in Israel' },
+      { label: '🔮 Sarah (US)', fieldA: 'sarah', fieldB: 'US', description: 'Age prediction for Sarah in US' },
+      { label: '🔮 David (GB)', fieldA: 'david', fieldB: 'GB', description: 'Age prediction for David in UK' },
+      { label: '🔮 Noam (IL)', fieldA: 'noam', fieldB: 'IL', description: 'Age prediction for Noam in Israel' }
+    ],
+    'exchange-rate': [
+      { label: '💱 USD Base', fieldA: 'USD', fieldB: '0', description: 'Forex rates relative to USD' },
+      { label: '💱 EUR Base', fieldA: 'EUR', fieldB: '0', description: 'Forex rates relative to EUR' },
+      { label: '💱 ILS Base', fieldA: 'ILS', fieldB: '0', description: 'Forex rates relative to ILS' },
+      { label: '💱 GBP Base', fieldA: 'GBP', fieldB: '0', description: 'Forex rates relative to GBP' }
+    ],
+    'cat-fact': [
+      { label: '🐱 Short Fact (50 chars)', fieldA: '50', fieldB: '0', description: 'Cat fact max 50 chars' },
+      { label: '🐱 Medium Fact (100 chars)', fieldA: '100', fieldB: '0', description: 'Cat fact max 100 chars' },
+      { label: '🐱 Long Fact (200 chars)', fieldA: '200', fieldB: '0', description: 'Cat fact max 200 chars' }
+    ],
+    'country-info': [
+      { label: '🌍 Israel', fieldA: 'Israel', fieldB: '0', description: 'Country info for Israel' },
+      { label: '🌍 Japan', fieldA: 'Japan', fieldB: '0', description: 'Country info for Japan' },
+      { label: '🌍 United States', fieldA: 'United States', fieldB: '0', description: 'Country info for USA' },
+      { label: '🌍 France', fieldA: 'France', fieldB: '0', description: 'Country info for France' }
+    ],
+    'github-user': [
+      { label: '👤 Angular', fieldA: 'angular', fieldB: '0', description: 'GitHub stats for angular org' },
+      { label: '👤 Dotnet', fieldA: 'dotnet', fieldB: '0', description: 'GitHub stats for dotnet org' },
+      { label: '👤 Torvalds', fieldA: 'torvalds', fieldB: '0', description: 'GitHub profile for Linus Torvalds' }
+    ],
+    'open-meteo-forecast': [
+      { label: '🇮🇱 Tel Aviv', fieldA: '32.0853', fieldB: '34.7818', description: 'Tel Aviv weather' },
+      { label: '🇮🇱 Jerusalem', fieldA: '31.7683', fieldB: '35.2137', description: 'Jerusalem weather' },
+      { label: '🇺🇸 New York', fieldA: '40.7128', fieldB: '-74.0060', description: 'New York weather' }
+    ]
+  };
 
   // Reactive Form
   calcForm = this.fb.group({
@@ -121,6 +170,11 @@ export class CalculatorComponent implements OnInit {
       map.get(cat)!.push(op);
     }
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+  });
+
+  currentApiPresets = computed(() => {
+    const key = (this.selectedOperationKey() || '').toLowerCase();
+    return this.externalApiPresets[key] || [];
   });
 
   isJsonResult = computed(() => {
@@ -196,15 +250,33 @@ export class CalculatorComponent implements OnInit {
       if (Array.isArray(data)) {
         return data.slice(0, 10).map((item, idx) => ({
           key: `[${idx}]`,
-          value: typeof item === 'object' ? JSON.stringify(item) : String(item),
+          value: typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item),
           isObject: typeof item === 'object' && item !== null
         }));
       }
-      return Object.entries(data).map(([k, v]) => ({
-        key: k,
-        value: typeof v === 'object' && v !== null ? JSON.stringify(v, null, 2) : String(v),
-        isObject: typeof v === 'object' && v !== null
-      }));
+
+      const entries: ParsedJsonEntry[] = [];
+      for (const [k, v] of Object.entries(data)) {
+        if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+          const nestedEntries = Object.entries(v);
+          if (nestedEntries.length > 0 && nestedEntries.length <= 8) {
+            for (const [subK, subV] of nestedEntries) {
+              entries.push({
+                key: `${k} → ${subK}`,
+                value: typeof subV === 'object' && subV !== null ? JSON.stringify(subV) : String(subV),
+                isObject: typeof subV === 'object' && subV !== null
+              });
+            }
+            continue;
+          }
+        }
+        entries.push({
+          key: k,
+          value: typeof v === 'object' && v !== null ? JSON.stringify(v, null, 2) : String(v),
+          isObject: typeof v === 'object' && v !== null
+        });
+      }
+      return entries;
     } catch {
       return [];
     }
@@ -249,12 +321,34 @@ export class CalculatorComponent implements OnInit {
     this.selectedOperationKey.set(key);
     this.calcForm.patchValue({ operationKey: key });
 
-    // Set intelligent defaults for weather
-    if (key === 'weather') {
-      const currentA = this.calcForm.get('fieldA')?.value;
-      const currentB = this.calcForm.get('fieldB')?.value;
-      if (!currentA) this.calcForm.patchValue({ fieldA: '32.0853' }); // Tel Aviv latitude
-      if (!currentB) this.calcForm.patchValue({ fieldB: '34.7818' }); // Tel Aviv longitude
+    // Set intelligent defaults for operations if fields are empty
+    const currentA = this.calcForm.get('fieldA')?.value;
+    const currentB = this.calcForm.get('fieldB')?.value;
+
+    if (!currentA || !currentB) {
+      const lowerKey = key.toLowerCase();
+      if (lowerKey === 'weather' || lowerKey === 'open-meteo-forecast') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: '32.0853' }); // Tel Aviv latitude
+        if (!currentB) this.calcForm.patchValue({ fieldB: '34.7818' }); // Tel Aviv longitude
+      } else if (lowerKey === 'crypto-price') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: 'bitcoin' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: 'usd' });
+      } else if (lowerKey === 'predict-age') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: 'michael' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: 'IL' });
+      } else if (lowerKey === 'exchange-rate') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: 'USD' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: '0' });
+      } else if (lowerKey === 'cat-fact') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: '50' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: '0' });
+      } else if (lowerKey === 'country-info') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: 'Israel' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: '0' });
+      } else if (lowerKey === 'github-user') {
+        if (!currentA) this.calcForm.patchValue({ fieldA: 'angular' });
+        if (!currentB) this.calcForm.patchValue({ fieldB: '0' });
+      }
     }
 
     this.loadOperationMetrics(key);
@@ -316,9 +410,11 @@ export class CalculatorComponent implements OnInit {
   }
 
   applyPreset(key: string, a: string, b: string): void {
-    this.selectOperation(key);
+    const existingOp = this.operations().find(o => o.key.toLowerCase() === key.toLowerCase());
+    const targetKey = existingOp ? existingOp.key : key;
+    this.selectOperation(targetKey);
     this.calcForm.patchValue({
-      operationKey: key,
+      operationKey: targetKey,
       fieldA: a,
       fieldB: b
     });
@@ -328,6 +424,13 @@ export class CalculatorComponent implements OnInit {
     this.calcForm.patchValue({
       fieldA: lat,
       fieldB: lon
+    });
+  }
+
+  applyApiPreset(a: string, b: string): void {
+    this.calcForm.patchValue({
+      fieldA: a,
+      fieldB: b
     });
   }
 

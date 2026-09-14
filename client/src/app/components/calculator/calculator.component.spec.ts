@@ -30,6 +30,24 @@ describe('CalculatorComponent', () => {
       fieldAPrompt: 'Latitude',
       fieldBPrompt: 'Longitude',
       isActive: true
+    },
+    {
+      key: 'crypto-price',
+      displayName: 'Crypto Price',
+      category: 'ExternalApi',
+      ruleTemplate: 'https://api.coingecko.com/api/v3/simple/price?ids={A}&vs_currencies={B}',
+      fieldAPrompt: 'Coin ID',
+      fieldBPrompt: 'Currency',
+      isActive: true
+    },
+    {
+      key: 'predict-age',
+      displayName: 'Predict Age',
+      category: 'ExternalApi',
+      ruleTemplate: 'https://api.agify.io/?name={A}&country_id={B}',
+      fieldAPrompt: 'Name',
+      fieldBPrompt: 'Country',
+      isActive: true
     }
   ];
 
@@ -83,7 +101,7 @@ describe('CalculatorComponent', () => {
   it('should create the component and load operations', () => {
     expect(component).toBeTruthy();
     expect(mockOperationsService.getOperations).toHaveBeenCalled();
-    expect(component.operations().length).toBe(2);
+    expect(component.operations().length).toBe(4);
   });
 
   it('should dynamically update contextual prompts when operation changes', () => {
@@ -228,6 +246,26 @@ describe('CalculatorComponent', () => {
     expect(component.calcForm.get('fieldB')?.value).toBe('35.2137');
   });
 
+  it('should render contextual API presets bar for non-weather external APIs (e.g. crypto-price)', () => {
+    component.selectOperation('crypto-price');
+    fixture.detectChanges();
+
+    expect(component.isExternalApi()).toBeTrue();
+    expect(component.isWeatherOperation()).toBeFalse();
+    expect(component.currentApiPresets().length).toBeGreaterThan(0);
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const apiPresetsBar = compiled.querySelector('#api-presets-bar');
+    expect(apiPresetsBar).toBeTruthy();
+    expect(apiPresetsBar?.textContent).toContain('Bitcoin / USD');
+    expect(apiPresetsBar?.textContent).toContain('Ethereum / EUR');
+
+    // Click on preset
+    component.applyApiPreset('ethereum', 'eur');
+    expect(component.calcForm.get('fieldA')?.value).toBe('ethereum');
+    expect(component.calcForm.get('fieldB')?.value).toBe('eur');
+  });
+
   it('should parse weather JSON and render rich weather widget in visual view', () => {
     const fullWeatherJson = JSON.stringify({
       latitude: 32.0853,
@@ -277,6 +315,33 @@ describe('CalculatorComponent', () => {
     expect(weatherWidget?.textContent).toContain('26.4 °C');
     expect(weatherWidget?.textContent).toContain('62 %');
     expect(weatherWidget?.textContent).toContain('14.8 km/h');
+  });
+
+  it('should parse and flatten generic nested JSON results for inspector widget', () => {
+    const cryptoJson = JSON.stringify({
+      bitcoin: {
+        usd: 62500,
+        ils: 235000
+      }
+    });
+
+    component.calculationResult.set({
+      operationKey: 'crypto-price',
+      fieldA: 'bitcoin',
+      fieldB: 'usd',
+      result: cryptoJson,
+      durationMs: 25,
+      executedAt: '2026-09-14T12:00:00Z',
+      recentExecutions: [],
+      monthlyExecutionCount: 1
+    });
+
+    const entries = component.parsedGenericJsonEntries();
+    expect(entries.length).toBe(2);
+    expect(entries[0].key).toBe('bitcoin → usd');
+    expect(entries[0].value).toBe('62500');
+    expect(entries[1].key).toBe('bitcoin → ils');
+    expect(entries[1].value).toBe('235000');
   });
 
   it('should allow switching view modes between visual, formatted, and raw', () => {

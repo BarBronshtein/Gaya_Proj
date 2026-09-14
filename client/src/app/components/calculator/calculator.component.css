@@ -728,7 +728,7 @@
 }
 
 /* City Presets Bar */
-.city-presets-bar {
+.city-presets-bar, .api-presets-bar {
   margin-bottom: 1.25rem;
   padding: 0.75rem;
   background: #f0fdf4;
@@ -736,7 +736,7 @@
   border-radius: 10px;
 }
 
-.city-presets-title {
+.city-presets-title, .api-presets-title {
   display: block;
   font-size: 0.8rem;
   font-weight: 700;
@@ -744,13 +744,13 @@
   margin-bottom: 0.5rem;
 }
 
-.city-chips {
+.city-chips, .api-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
-.city-chip {
+.city-chip, .api-chip {
   background: white;
   border: 1px solid #86efac;
   color: #14532d;
@@ -762,13 +762,13 @@
   transition: all 0.15s ease;
 }
 
-.city-chip:hover {
+.city-chip:hover, .api-chip:hover {
   background: #16a34a;
   border-color: #16a34a;
   color: white;
 }
 
-.city-chip-active {
+.city-chip-active, .api-chip-active {
   background: #15803d;
   border-color: #15803d;
   color: white;
