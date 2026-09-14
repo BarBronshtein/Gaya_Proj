@@ -1,6 +1,7 @@
 using System.Globalization;
 using Gaya.Application.Common.Models;
 using Gaya.Domain.Entities;
+using Gaya.Domain.Enums;
 
 namespace Gaya.Application.Evaluators;
 
@@ -8,7 +9,24 @@ public class DynamicExpressionEvaluator : IOperationEvaluator
 {
     public bool CanEvaluate(OperationDefinition operation)
     {
-        return !string.IsNullOrWhiteSpace(operation.RuleTemplate);
+        if (operation == null || string.IsNullOrWhiteSpace(operation.RuleTemplate))
+        {
+            return false;
+        }
+
+        if (operation.Category == OperationCategory.ExternalApi)
+        {
+            return false;
+        }
+
+        var template = operation.RuleTemplate.Trim();
+        if (template.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            template.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public Task<CalculationResult> EvaluateAsync(

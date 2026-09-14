@@ -9,10 +9,15 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // 1. Register HTTP Client for Weather Evaluator
+        // 1. Register HTTP Clients for External API & Weather Evaluators
         services.AddHttpClient<WeatherEvaluator>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
+        services.AddHttpClient<ExternalApiEvaluator>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
         });
 
         // 2. Register Evaluators
@@ -24,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IOperationEvaluator>(sp => sp.GetRequiredService<StringEvaluator>());
         services.AddSingleton<IOperationEvaluator>(sp => sp.GetRequiredService<DynamicExpressionEvaluator>());
         services.AddTransient<IOperationEvaluator>(sp => sp.GetRequiredService<WeatherEvaluator>());
+        services.AddTransient<IOperationEvaluator>(sp => sp.GetRequiredService<ExternalApiEvaluator>());
 
         // 3. Register Dynamic Operation Engine (contains mandatory marker // A34D)
         services.AddScoped<IDynamicOperationEngine, DynamicOperationEngine>();

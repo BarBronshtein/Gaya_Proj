@@ -116,4 +116,35 @@ describe('OperationsHubComponent', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith(['/calculator'], { queryParams: { key: 'add' } });
   });
+
+  it('should fill external api quick template correctly', () => {
+    component.fillExample('crypto');
+    expect(component.newOp.key).toBe('crypto-price');
+    expect(component.newOp.category).toBe('ExternalApi');
+    expect(component.newOp.ruleTemplate).toContain('api.coingecko.com');
+    expect(component.isExternalApi).toBeTrue();
+    expect(component.ruleHintText).toContain('{A}');
+    expect(component.rulePlaceholder).toContain('api.agify.io');
+  });
+
+  it('should reject external api operation if rule template is missing or not http(s)', () => {
+    component.newOp = {
+      key: 'invalid-api',
+      displayName: 'Invalid API',
+      category: 'ExternalApi',
+      ruleTemplate: '',
+      fieldAPrompt: 'A',
+      fieldBPrompt: 'B',
+      isActive: true
+    };
+
+    component.onSubmit();
+    expect(component.errorMessage()).toContain('External API operations require a valid URL');
+    expect(mockOperationsService.createOperation).not.toHaveBeenCalled();
+
+    component.newOp.ruleTemplate = 'ftp://files.example.com/{A}';
+    component.onSubmit();
+    expect(component.errorMessage()).toContain('must start with http:// or https://');
+    expect(mockOperationsService.createOperation).not.toHaveBeenCalled();
+  });
 });

@@ -144,12 +144,28 @@ public class CalculatorService : ICalculatorService
         var key = dto.Key.Trim().ToLowerInvariant();
         var category = Enum.TryParse<OperationCategory>(dto.Category, true, out var cat) ? cat : OperationCategory.Arithmetic;
 
+        var ruleTemplate = dto.RuleTemplate?.Trim() ?? string.Empty;
+
+        if (category == OperationCategory.ExternalApi)
+        {
+            if (string.IsNullOrWhiteSpace(ruleTemplate))
+            {
+                throw new ArgumentException("External API operations require a valid URL rule template.", nameof(dto.RuleTemplate));
+            }
+
+            if (!ruleTemplate.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !ruleTemplate.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("External API rule template must start with 'http://' or 'https://'.", nameof(dto.RuleTemplate));
+            }
+        }
+
         var entity = new OperationDefinition
         {
             Key = key,
             DisplayName = dto.DisplayName.Trim(),
             Category = category,
-            RuleTemplate = dto.RuleTemplate?.Trim() ?? string.Empty,
+            RuleTemplate = ruleTemplate,
             FieldAPrompt = string.IsNullOrWhiteSpace(dto.FieldAPrompt) ? "Field A" : dto.FieldAPrompt.Trim(),
             FieldBPrompt = string.IsNullOrWhiteSpace(dto.FieldBPrompt) ? "Field B" : dto.FieldBPrompt.Trim(),
             Description = dto.Description?.Trim(),

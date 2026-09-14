@@ -89,7 +89,7 @@
             </select>
           </div>
           @if (selectedOperation()?.ruleTemplate; as tmpl) {
-            <span class="rule-hint">Rule Expression: <code>{{ tmpl }}</code></span>
+            <span class="rule-hint">Rule Expression / URL: <code>{{ tmpl }}</code></span>
           }
         </div>
 
@@ -198,6 +198,14 @@
               <span class="status-title">Calculation Result / תוצאה</span>
             </div>
             <div class="result-badges">
+              @if (isJsonResult()) {
+                <button
+                  type="button"
+                  class="btn-format-toggle"
+                  (click)="showRawJson.set(!showRawJson())">
+                  {{ showRawJson() ? '📄 Formatted JSON' : '🔍 Raw' }}
+                </button>
+              }
               <span class="duration-badge">
                 ⏱️ {{ res.durationMs }} ms
               </span>
@@ -209,7 +217,11 @@
 
           <div class="result-body">
             <div class="result-display-wrapper">
-              <div class="result-value" id="result-value">{{ res.result }}</div>
+              @if (isJsonResult() && !showRawJson()) {
+                <pre class="result-json-block" id="result-value"><code>{{ formattedResult() }}</code></pre>
+              } @else {
+                <div class="result-value" id="result-value">{{ res.result }}</div>
+              }
               <button
                 type="button"
                 class="copy-btn"
@@ -276,7 +288,7 @@
                     <td class="cell-operand" [title]="item.fieldA">{{ item.fieldA }}</td>
                     <td class="cell-operand" [title]="item.fieldB">{{ item.fieldB }}</td>
                     <td class="cell-result">
-                      <code class="result-code">{{ item.result }}</code>
+                      <code class="result-code" [title]="item.result">{{ item.result }}</code>
                     </td>
                     <td class="cell-duration">{{ item.durationMs }} ms</td>
                     <td class="cell-time" [title]="formatDate(item.executedAt)">
@@ -294,7 +306,7 @@
       <div class="sidebar-card quick-create-card">
         <div class="quick-create-content">
           <h4>Need a custom operation?</h4>
-          <p>Define new arithmetic, string, or formula operations in real-time without server restarts.</p>
+          <p>Define new arithmetic, string, formula, or external REST API operations in real-time without server restarts.</p>
           <a routerLink="/operations-hub" class="btn btn-secondary btn-sm">
             Open Operations Hub →
           </a>

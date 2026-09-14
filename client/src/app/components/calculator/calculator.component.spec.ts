@@ -167,5 +167,37 @@ describe('CalculatorComponent', () => {
     expect(winterTime).toBe('15/01/2026, 12:00:00 (Israel Time)');
     expect(winterTime).not.toContain('UTC');
   });
+
+  it('should detect and format JSON result for external API calculations', () => {
+    const rawJson = '{"latitude":32.0853,"current":{"temperature_2m":24.5}}';
+    const mockCalcResponse: CalculationResponseDto = {
+      operationKey: 'weather',
+      fieldA: '32.0853',
+      fieldB: '34.7818',
+      result: rawJson,
+      durationMs: 45,
+      executedAt: '2026-09-14T12:00:00Z',
+      recentExecutions: [],
+      monthlyExecutionCount: 1
+    };
+    mockCalculatorService.calculate.and.returnValue(of(mockCalcResponse));
+
+    component.calcForm.patchValue({
+      operationKey: 'weather',
+      fieldA: '32.0853',
+      fieldB: '34.7818'
+    });
+
+    component.onCalculate();
+    fixture.detectChanges();
+
+    expect(component.isJsonResult()).toBeTrue();
+    expect(component.formattedResult()).toContain('"temperature_2m": 24.5');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const jsonBlock = compiled.querySelector('.result-json-block');
+    expect(jsonBlock).toBeTruthy();
+    expect(jsonBlock?.textContent).toContain('temperature_2m');
+  });
 });
 

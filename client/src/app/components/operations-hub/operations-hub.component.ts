@@ -80,10 +80,57 @@ export class OperationsHubComponent implements OnInit {
     });
   }
 
+  get isExternalApi(): boolean {
+    return (this.newOp.category || '').toLowerCase() === 'externalapi';
+  }
+
+  get rulePlaceholder(): string {
+    if (this.isExternalApi) {
+      return 'https://api.agify.io/?name={A}&country_id={B} or https://catfact.ninja/fact?max_length={A}';
+    }
+    return 'e.g. A * (1 - (B / 100)) or {A} - {B}';
+  }
+
+  get ruleHintText(): string {
+    if (this.isExternalApi) {
+      return 'Use {A} and {B} for dynamic URL parameters (e.g. https://api.agify.io/?name={A}&country_id={B})';
+    }
+    return 'Use A and B for variables (e.g. A * (1 - (B / 100)) or sqrt(A*A + B*B))';
+  }
+
+  get fieldAPlaceholder(): string {
+    if (this.isExternalApi) {
+      return 'e.g. Query Parameter {A} (e.g. Coin ID / Name / Latitude)';
+    }
+    return 'e.g. Original Price';
+  }
+
+  get fieldBPlaceholder(): string {
+    if (this.isExternalApi) {
+      return 'e.g. Query Parameter {B} (e.g. Currency / Country Code / Longitude)';
+    }
+    return 'e.g. Discount Percentage';
+  }
+
   onSubmit(): void {
     if (!this.newOp.key || !this.newOp.displayName) {
       this.errorMessage.set('Please provide both Operation Key and Display Name.');
       return;
+    }
+
+    const category = this.newOp.category || 'Dynamic';
+    const ruleTemplate = (this.newOp.ruleTemplate || '').trim();
+
+    if (category.toLowerCase() === 'externalapi') {
+      if (!ruleTemplate) {
+        this.errorMessage.set('External API operations require a valid URL rule template.');
+        return;
+      }
+
+      if (!ruleTemplate.startsWith('http://') && !ruleTemplate.startsWith('https://')) {
+        this.errorMessage.set('External API rule template must start with http:// or https:// (use {A} and {B} as placeholders).');
+        return;
+      }
     }
 
     this.isSubmitting.set(true);
@@ -93,10 +140,10 @@ export class OperationsHubComponent implements OnInit {
     const dto: CreateOperationDto = {
       key: this.newOp.key.trim().toLowerCase(),
       displayName: this.newOp.displayName.trim(),
-      category: this.newOp.category || 'Dynamic',
-      ruleTemplate: (this.newOp.ruleTemplate || '').trim(),
-      fieldAPrompt: (this.newOp.fieldAPrompt || '').trim(),
-      fieldBPrompt: (this.newOp.fieldBPrompt || '').trim(),
+      category: category,
+      ruleTemplate: ruleTemplate,
+      fieldAPrompt: (this.newOp.fieldAPrompt || '').trim() || (this.isExternalApi ? 'Parameter A' : 'Field A'),
+      fieldBPrompt: (this.newOp.fieldBPrompt || '').trim() || (this.isExternalApi ? 'Parameter B' : 'Field B'),
       description: this.newOp.description?.trim() || null,
       isActive: this.newOp.isActive ?? true
     };
@@ -147,7 +194,7 @@ export class OperationsHubComponent implements OnInit {
     this.router.navigate(['/calculator'], { queryParams: { key } });
   }
 
-  fillExample(type: 'discount' | 'celsius' | 'greeting' | 'hypotenuse'): void {
+  fillExample(type: 'discount' | 'celsius' | 'greeting' | 'hypotenuse' | 'crypto' | 'catfact' | 'agify'): void {
     if (type === 'discount') {
       this.newOp = {
         key: 'discount-calc',
@@ -190,6 +237,39 @@ export class OperationsHubComponent implements OnInit {
         fieldAPrompt: 'Base Length (a)',
         fieldBPrompt: 'Height (b)',
         description: 'Computes hypotenuse c = sqrt(a^2 + b^2)',
+        isActive: true
+      };
+    } else if (type === 'crypto') {
+      this.newOp = {
+        key: 'crypto-price',
+        displayName: 'Crypto Live Price (CoinGecko)',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://api.coingecko.com/api/v3/simple/price?ids={A}&vs_currencies={B}',
+        fieldAPrompt: 'Coin ID (e.g. bitcoin, ethereum)',
+        fieldBPrompt: 'Target Currency (e.g. usd, ils, eur)',
+        description: 'Fetches real-time crypto asset market prices via CoinGecko REST API',
+        isActive: true
+      };
+    } else if (type === 'catfact') {
+      this.newOp = {
+        key: 'cat-fact',
+        displayName: 'Random Cat Fact API',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://catfact.ninja/fact?max_length={A}',
+        fieldAPrompt: 'Max Length (Characters)',
+        fieldBPrompt: 'Unused (Enter 0)',
+        description: 'Retrieves a random cat fact within specified character limit',
+        isActive: true
+      };
+    } else if (type === 'agify') {
+      this.newOp = {
+        key: 'predict-age',
+        displayName: 'Name Age Predictor (Agify)',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://api.agify.io/?name={A}&country_id={B}',
+        fieldAPrompt: 'First Name (e.g. michael)',
+        fieldBPrompt: 'Country Code (e.g. IL, US)',
+        description: 'Predicts demographic age based on given name and country code',
         isActive: true
       };
     }

@@ -36,6 +36,7 @@ export class CalculatorComponent implements OnInit {
   monthlyExecutionCount = signal<number>(0);
   errorMessage = signal<string | null>(null);
   copied = signal<boolean>(false);
+  showRawJson = signal<boolean>(false);
 
   // Reactive Form
   calcForm = this.fb.group({
@@ -71,6 +72,28 @@ export class CalculatorComponent implements OnInit {
       map.get(cat)!.push(op);
     }
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+  });
+
+  isJsonResult = computed(() => {
+    const res = this.calculationResult();
+    if (!res || !res.result) return false;
+    const trimmed = res.result.trim();
+    return (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  });
+
+  formattedResult = computed(() => {
+    const res = this.calculationResult();
+    if (!res || !res.result) return '';
+    const trimmed = res.result.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return res.result;
+      }
+    }
+    return res.result;
   });
 
   ngOnInit(): void {
@@ -189,7 +212,8 @@ export class CalculatorComponent implements OnInit {
   copyResult(): void {
     const res = this.calculationResult();
     if (!res) return;
-    navigator.clipboard.writeText(res.result).then(() => {
+    const textToCopy = this.showRawJson() ? res.result : (this.isJsonResult() ? this.formattedResult() : res.result);
+    navigator.clipboard.writeText(textToCopy).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     });

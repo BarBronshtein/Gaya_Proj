@@ -307,6 +307,22 @@ curl -X POST http://localhost:5000/api/operations \
 }
 ```
 
+##### External API Dynamic Operation Example:
+```bash
+curl -X POST http://localhost:5000/api/operations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "crypto-price",
+    "displayName": "Crypto Live Price",
+    "category": "ExternalApi",
+    "ruleTemplate": "https://api.coingecko.com/api/v3/simple/price?ids={A}&vs_currencies={B}",
+    "fieldAPrompt": "Coin ID (e.g. bitcoin)",
+    "fieldBPrompt": "Target Currency (e.g. usd)",
+    "description": "Fetches real-time crypto price from CoinGecko API",
+    "isActive": true
+  }'
+```
+
 ---
 
 ### 4. Get Operation Metrics (`GET /api/operations/{key}/metrics`)

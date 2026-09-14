@@ -6,7 +6,7 @@
       <div>
         <h1 class="page-title">Operations Hub / מרכז ניהול פעולות</h1>
         <p class="subtitle">
-          Define, configure, and manage dynamic runtime calculation rules without server restart.
+          Define, configure, and manage dynamic runtime calculation rules and external REST API integrations without server restart.
         </p>
       </div>
     </div>
@@ -43,8 +43,22 @@
         <button type="button" class="btn-chip" (click)="fillExample('celsius')">🌡️ Celsius/Fahrenheit</button>
         <button type="button" class="btn-chip" (click)="fillExample('greeting')">💬 Greeting</button>
         <button type="button" class="btn-chip" (click)="fillExample('hypotenuse')">📐 Hypotenuse</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('crypto')">🪙 Crypto (API)</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('catfact')">🐱 Cat Fact (API)</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('agify')">🔮 Agify (API)</button>
       </div>
     </div>
+
+    <!-- External API Info Callout if category is ExternalApi -->
+    @if (isExternalApi) {
+      <div class="api-guide-banner">
+        <div class="api-guide-icon">🌐</div>
+        <div class="api-guide-text">
+          <strong>External REST API Integration:</strong>
+          <span>Specify an HTTP/HTTPS endpoint in the Rule Template. Use <code>&#123;A&#125;</code> and <code>&#123;B&#125;</code> for dynamic parameter substitution (path variables or query parameters). Operands are automatically URL-encoded before dispatch.</span>
+        </div>
+      </div>
+    }
 
     <form (ngSubmit)="onSubmit()" class="op-form">
       <div class="form-grid-3">
@@ -54,7 +68,7 @@
             type="text"
             class="form-input"
             id="op-key-input"
-            placeholder="e.g. discount-calc"
+            placeholder="e.g. crypto-price"
             [(ngModel)]="newOp.key"
             name="key"
             required
@@ -67,7 +81,7 @@
             type="text"
             class="form-input"
             id="op-name-input"
-            placeholder="e.g. Discount Calculator"
+            placeholder="e.g. Crypto Live Price"
             [(ngModel)]="newOp.displayName"
             name="displayName"
             required
@@ -86,14 +100,14 @@
 
       <div class="form-group">
         <label class="form-label">
-          <span>Rule Template / Expression (תבנית כלל) *:</span>
-          <small class="rule-hint">Use A and B for variables (e.g. <code>A * (1 - (B / 100))</code> or <code>sqrt(A*A + B*B)</code>)</small>
+          <span>Rule Template / Endpoint URL (תבנית כלל) *:</span>
+          <small class="rule-hint">{{ ruleHintText }}</small>
         </label>
         <input
           type="text"
           class="form-input code-font"
           id="op-rule-input"
-          placeholder="e.g. A * (1 - (B / 100)) or {A} - {B}"
+          [placeholder]="rulePlaceholder"
           [(ngModel)]="newOp.ruleTemplate"
           name="ruleTemplate"
           required
@@ -107,7 +121,7 @@
             type="text"
             class="form-input"
             id="field-a-prompt-input"
-            placeholder="e.g. Original Price"
+            [placeholder]="fieldAPlaceholder"
             [(ngModel)]="newOp.fieldAPrompt"
             name="fieldAPrompt"
             required
@@ -120,7 +134,7 @@
             type="text"
             class="form-input"
             id="field-b-prompt-input"
-            placeholder="e.g. Discount Percentage"
+            [placeholder]="fieldBPlaceholder"
             [(ngModel)]="newOp.fieldBPrompt"
             name="fieldBPrompt"
             required
@@ -134,7 +148,7 @@
           type="text"
           class="form-input"
           id="op-desc-input"
-          placeholder="Brief explanation of the calculation logic..."
+          placeholder="Brief explanation of the calculation or external API logic..."
           [(ngModel)]="newOp.description"
           name="description"
         />
@@ -213,7 +227,7 @@
             <th>Key</th>
             <th>Name (שם)</th>
             <th>Category</th>
-            <th>Rule Template (תבנית)</th>
+            <th>Rule Template / Endpoint</th>
             <th>Prompts (שדה א' / ב')</th>
             <th>Status</th>
             <th>Actions</th>
@@ -241,7 +255,9 @@
                   {{ op.category }}
                 </span>
               </td>
-              <td class="rule-cell"><code>{{ op.ruleTemplate || '(Built-in)' }}</code></td>
+              <td class="rule-cell" [title]="op.ruleTemplate">
+                <code>{{ op.ruleTemplate || '(Built-in)' }}</code>
+              </td>
               <td class="prompts-cell">{{ op.fieldAPrompt }} / {{ op.fieldBPrompt }}</td>
               <td>
                 <span class="status-badge" [class.status-active]="op.isActive" [class.status-inactive]="!op.isActive">

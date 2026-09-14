@@ -217,6 +217,17 @@ public class ReferenceCalculationEngine
             throw new InvalidOperationException($"Operation '{opKey}' does not have a defined rule template.");
         }
 
+        // External API URL Template in reference engine
+        if (ruleTemplate.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            ruleTemplate.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            var resolvedUrl = ruleTemplate
+                .Replace("{A}", fieldA ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace("{B}", fieldB ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+            return $"{{\"url\":\"{resolvedUrl}\",\"fieldA\":\"{fieldA}\",\"fieldB\":\"{fieldB}\",\"status\":\"success\"}}";
+        }
+
         if (!double.TryParse(fieldA, NumberStyles.Float, CultureInfo.InvariantCulture, out var a) ||
             !double.TryParse(fieldB, NumberStyles.Float, CultureInfo.InvariantCulture, out var b))
         {
