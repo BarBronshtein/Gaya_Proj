@@ -71,8 +71,7 @@
               id="operation-select"
               formControlName="operationKey"
               class="form-control select-control"
-              (change)="onOperationChange($event)"
-              [disabled]="isLoadingOperations()">
+              (change)="onOperationChange($event)">
               @if (isLoadingOperations()) {
                 <option value="">Loading operations from server...</option>
               } @else {
@@ -92,6 +91,47 @@
             <span class="rule-hint">Rule Expression / URL: <code>{{ tmpl }}</code></span>
           }
         </div>
+
+        <!-- External API Live Endpoint Card -->
+        @if (isExternalApi()) {
+          <div class="api-endpoint-card" id="api-endpoint-card">
+            <div class="api-endpoint-header">
+              <span class="http-badge get-badge">GET</span>
+              <span class="api-endpoint-label">External REST API Integration</span>
+              <span class="api-live-indicator">● Live</span>
+            </div>
+            @if (resolvedUrlPreview()) {
+              <div class="resolved-url-box">
+                <span class="url-label">Live Dispatched URL:</span>
+                <code class="resolved-url">{{ resolvedUrlPreview() }}</code>
+              </div>
+            } @else if (selectedOperation()?.ruleTemplate) {
+              <div class="resolved-url-box">
+                <span class="url-label">Endpoint Template:</span>
+                <code class="resolved-url">{{ selectedOperation()?.ruleTemplate }}</code>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- City Presets for Weather Operation -->
+        @if (isWeatherOperation()) {
+          <div class="city-presets-bar">
+            <span class="city-presets-title">📍 City Coordinate Presets (קואורדינטות ערים):</span>
+            <div class="city-chips">
+              @for (city of cityPresets; track city.name) {
+                <button
+                  type="button"
+                  class="city-chip"
+                  [class.city-chip-active]="calcForm.get('fieldA')?.value === city.lat && calcForm.get('fieldB')?.value === city.lon"
+                  (click)="applyCityPreset(city.lat, city.lon)"
+                  [title]="city.name + ' (' + city.lat + ', ' + city.lon + ')'">
+                  {{ city.flag }} {{ city.name }} ({{ city.hebrew }})
+                </button>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Dynamic Contextual Inputs Grid -->
         <div class="operands-grid">
@@ -156,9 +196,21 @@
             </button>
             <button
               type="button"
-              class="preset-chip"
+              class="preset-chip preset-chip-api"
               (click)="applyPreset('weather', '32.0853', '34.7818')">
               ⛅ Tel Aviv Weather
+            </button>
+            <button
+              type="button"
+              class="preset-chip preset-chip-api"
+              (click)="applyPreset('weather', '31.7683', '35.2137')">
+              ⛅ Jerusalem Weather
+            </button>
+            <button
+              type="button"
+              class="preset-chip preset-chip-api"
+              (click)="applyPreset('weather', '40.7128', '-74.0060')">
+              ⛅ New York Weather
             </button>
             <button
               type="button"
@@ -198,13 +250,30 @@
               <span class="status-title">Calculation Result / תוצאה</span>
             </div>
             <div class="result-badges">
-              @if (isJsonResult()) {
-                <button
-                  type="button"
-                  class="btn-format-toggle"
-                  (click)="showRawJson.set(!showRawJson())">
-                  {{ showRawJson() ? '📄 Formatted JSON' : '🔍 Raw' }}
-                </button>
+              @if (isJsonResult() || isWeatherResult()) {
+                <div class="view-mode-toggle-group">
+                  <button
+                    type="button"
+                    class="btn-toggle-view"
+                    [class.active]="viewMode() === 'visual'"
+                    (click)="setViewMode('visual')">
+                    ✨ Visual Card
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-toggle-view"
+                    [class.active]="viewMode() === 'formatted'"
+                    (click)="setViewMode('formatted')">
+                    📄 JSON
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-toggle-view"
+                    [class.active]="viewMode() === 'raw'"
+                    (click)="setViewMode('raw')">
+                    🔍 Raw
+                  </button>
+                </div>
               }
               <span class="duration-badge">
                 ⏱️ {{ res.durationMs }} ms
@@ -216,9 +285,75 @@
           </div>
 
           <div class="result-body">
+            <!-- Weather Visual Widget -->
+            @if (isWeatherResult() && parsedWeatherData(); as weather) {
+              @if (viewMode() === 'visual') {
+                <div class="weather-result-widget" id="weather-result-widget">
+                  <div class="weather-hero">
+                    <div class="weather-icon-large">{{ weather.weatherIcon }}</div>
+                    <div class="weather-main-info">
+                      <div class="weather-temp-large">
+                        {{ weather.temperature !== undefined ? weather.temperature + ' °C' : 'N/A' }}
+                      </div>
+                      <div class="weather-condition-title">{{ weather.weatherCondition }}</div>
+                    </div>
+                  </div>
+                  <div class="weather-metrics-grid">
+                    <div class="weather-metric-card">
+                      <span class="metric-icon">💧</span>
+                      <div class="metric-detail">
+                        <span class="metric-lbl">Relative Humidity</span>
+                        <span class="metric-val">{{ weather.humidity !== undefined ? weather.humidity + ' %' : 'N/A' }}</span>
+                      </div>
+                    </div>
+                    <div class="weather-metric-card">
+                      <span class="metric-icon">💨</span>
+                      <div class="metric-detail">
+                        <span class="metric-lbl">Wind Speed</span>
+                        <span class="metric-val">{{ weather.windSpeed !== undefined ? weather.windSpeed + ' km/h' : 'N/A' }}</span>
+                      </div>
+                    </div>
+                    <div class="weather-metric-card">
+                      <span class="metric-icon">📍</span>
+                      <div class="metric-detail">
+                        <span class="metric-lbl">Coordinates</span>
+                        <span class="metric-val">{{ weather.latitude }}, {{ weather.longitude }}</span>
+                      </div>
+                    </div>
+                    <div class="weather-metric-card">
+                      <span class="metric-icon">🌐</span>
+                      <div class="metric-detail">
+                        <span class="metric-lbl">Provider</span>
+                        <span class="metric-val">Open-Meteo API</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Generic JSON Inspector Widget -->
+            @if (!isWeatherResult() && isJsonResult() && parsedGenericJsonEntries().length > 0 && viewMode() === 'visual') {
+              <div class="json-inspector-widget">
+                <div class="json-entries-grid">
+                  @for (entry of parsedGenericJsonEntries(); track entry.key) {
+                    <div class="json-entry-card">
+                      <span class="entry-key">{{ entry.key }}</span>
+                      <span class="entry-value" [class.code-entry]="entry.isObject">{{ entry.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Standard Result / Code Block Display -->
             <div class="result-display-wrapper">
-              @if (isJsonResult() && !showRawJson()) {
+              @if (isJsonResult() && (viewMode() === 'formatted' || (viewMode() === 'visual' && isWeatherResult()))) {
                 <pre class="result-json-block" id="result-value"><code>{{ formattedResult() }}</code></pre>
+              } @else if (isJsonResult() && viewMode() === 'visual') {
+                <pre class="result-json-block" id="result-value"><code>{{ formattedResult() }}</code></pre>
+              } @else if (viewMode() === 'raw' || showRawJson()) {
+                <div class="result-value" id="result-value">{{ res.result }}</div>
               } @else {
                 <div class="result-value" id="result-value">{{ res.result }}</div>
               }

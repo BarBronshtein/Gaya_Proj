@@ -125,6 +125,29 @@ describe('OperationsHubComponent', () => {
     expect(component.isExternalApi).toBeTrue();
     expect(component.ruleHintText).toContain('{A}');
     expect(component.rulePlaceholder).toContain('api.agify.io');
+
+    component.fillExample('weather');
+    expect(component.newOp.key).toBe('open-meteo-forecast');
+    expect(component.newOp.ruleTemplate).toContain('api.open-meteo.com');
+
+    component.fillExample('exchange');
+    expect(component.newOp.key).toBe('exchange-rate');
+    expect(component.newOp.ruleTemplate).toContain('open.er-api.com');
+
+    component.fillExample('country');
+    expect(component.newOp.key).toBe('country-info');
+    expect(component.newOp.ruleTemplate).toContain('restcountries.com');
+
+    component.fillExample('github');
+    expect(component.newOp.key).toBe('github-user');
+    expect(component.newOp.ruleTemplate).toContain('api.github.com');
+  });
+
+  it('should generate dynamic URL preview with substituted parameters', () => {
+    component.fillExample('crypto');
+    expect(component.resolvedRulePreview).toContain('api.coingecko.com');
+    expect(component.resolvedRulePreview).not.toContain('{A}');
+    expect(component.resolvedRulePreview).not.toContain('{B}');
   });
 
   it('should reject external api operation if rule template is missing or not http(s)', () => {

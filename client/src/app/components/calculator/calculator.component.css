@@ -661,3 +661,278 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* External API Live Endpoint Card */
+.api-endpoint-card {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.api-endpoint-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.http-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.get-badge {
+  background: #15803d;
+  color: white;
+}
+
+.api-endpoint-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.api-live-indicator {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  margin-left: auto;
+}
+
+.resolved-url-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.url-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+.resolved-url {
+  font-family: monospace;
+  font-size: 0.82rem;
+  background: white;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+/* City Presets Bar */
+.city-presets-bar {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+.city-presets-title {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 0.5rem;
+}
+
+.city-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.city-chip {
+  background: white;
+  border: 1px solid #86efac;
+  color: #14532d;
+  padding: 0.25rem 0.6rem;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.city-chip:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.city-chip-active {
+  background: #15803d;
+  border-color: #15803d;
+  color: white;
+  font-weight: 700;
+}
+
+.preset-chip-api {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.preset-chip-api:hover {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+/* View Mode Toggle */
+.view-mode-toggle-group {
+  display: flex;
+  gap: 0.25rem;
+  background: #e2e8f0;
+  padding: 2px;
+  border-radius: 6px;
+}
+
+.btn-toggle-view {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-view:hover {
+  color: #0f172a;
+}
+
+.btn-toggle-view.active {
+  background: white;
+  color: #166534;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Weather Visual Widget */
+.weather-result-widget {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.weather-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.weather-icon-large {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.weather-temp-large {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #064e3b;
+  line-height: 1;
+}
+
+.weather-condition-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #047857;
+  margin-top: 0.25rem;
+}
+
+.weather-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.weather-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: white;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #a7f3d0;
+}
+
+.metric-icon {
+  font-size: 1.25rem;
+}
+
+.metric-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-lbl {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.metric-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* JSON Inspector Widget */
+.json-inspector-widget {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.json-entries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.json-entry-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.entry-key {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.entry-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-all;
+  margin-top: 0.2rem;
+}
+
+.entry-value.code-entry {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #334155;
+}

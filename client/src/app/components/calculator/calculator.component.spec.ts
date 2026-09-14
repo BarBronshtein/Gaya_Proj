@@ -199,5 +199,109 @@ describe('CalculatorComponent', () => {
     expect(jsonBlock).toBeTruthy();
     expect(jsonBlock?.textContent).toContain('temperature_2m');
   });
+
+  it('should render external API live endpoint card and city presets when weather is selected', () => {
+    component.selectOperation('weather');
+    fixture.detectChanges();
+
+    expect(component.isExternalApi()).toBeTrue();
+    expect(component.isWeatherOperation()).toBeTrue();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const endpointCard = compiled.querySelector('#api-endpoint-card');
+    expect(endpointCard).toBeTruthy();
+    expect(endpointCard?.textContent).toContain('GET');
+    expect(endpointCard?.textContent).toContain('External REST API');
+
+    const cityBar = compiled.querySelector('.city-presets-bar');
+    expect(cityBar).toBeTruthy();
+    expect(cityBar?.textContent).toContain('Tel Aviv');
+    expect(cityBar?.textContent).toContain('Jerusalem');
+  });
+
+  it('should apply city coordinates when clicking a city preset button', () => {
+    component.selectOperation('weather');
+    component.applyCityPreset('31.7683', '35.2137'); // Jerusalem
+    fixture.detectChanges();
+
+    expect(component.calcForm.get('fieldA')?.value).toBe('31.7683');
+    expect(component.calcForm.get('fieldB')?.value).toBe('35.2137');
+  });
+
+  it('should parse weather JSON and render rich weather widget in visual view', () => {
+    const fullWeatherJson = JSON.stringify({
+      latitude: 32.0853,
+      longitude: 34.7818,
+      current: {
+        time: '2026-09-14T16:00',
+        temperature_2m: 26.4,
+        relative_humidity_2m: 62,
+        wind_speed_10m: 14.8,
+        weather_code: 1
+      }
+    });
+
+    const mockCalcResponse: CalculationResponseDto = {
+      operationKey: 'weather',
+      fieldA: '32.0853',
+      fieldB: '34.7818',
+      result: fullWeatherJson,
+      durationMs: 38,
+      executedAt: '2026-09-14T12:00:00Z',
+      recentExecutions: [],
+      monthlyExecutionCount: 2
+    };
+    mockCalculatorService.calculate.and.returnValue(of(mockCalcResponse));
+
+    component.selectOperation('weather');
+    component.calcForm.patchValue({
+      operationKey: 'weather',
+      fieldA: '32.0853',
+      fieldB: '34.7818'
+    });
+
+    component.onCalculate();
+    fixture.detectChanges();
+
+    expect(component.isWeatherResult()).toBeTrue();
+    const weatherData = component.parsedWeatherData();
+    expect(weatherData).toBeTruthy();
+    expect(weatherData?.temperature).toBe(26.4);
+    expect(weatherData?.humidity).toBe(62);
+    expect(weatherData?.windSpeed).toBe(14.8);
+    expect(weatherData?.weatherCondition).toContain('Clear');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const weatherWidget = compiled.querySelector('#weather-result-widget');
+    expect(weatherWidget).toBeTruthy();
+    expect(weatherWidget?.textContent).toContain('26.4 °C');
+    expect(weatherWidget?.textContent).toContain('62 %');
+    expect(weatherWidget?.textContent).toContain('14.8 km/h');
+  });
+
+  it('should allow switching view modes between visual, formatted, and raw', () => {
+    const rawJson = '{"result":"data","count":42}';
+    component.calculationResult.set({
+      operationKey: 'custom-api',
+      fieldA: 'a',
+      fieldB: 'b',
+      result: rawJson,
+      durationMs: 12,
+      executedAt: '2026-09-14T12:00:00Z',
+      recentExecutions: [],
+      monthlyExecutionCount: 1
+    });
+
+    component.setViewMode('raw');
+    expect(component.viewMode()).toBe('raw');
+    expect(component.showRawJson()).toBeTrue();
+
+    component.setViewMode('formatted');
+    expect(component.viewMode()).toBe('formatted');
+    expect(component.showRawJson()).toBeFalse();
+
+    component.setViewMode('visual');
+    expect(component.viewMode()).toBe('visual');
+  });
 });
 

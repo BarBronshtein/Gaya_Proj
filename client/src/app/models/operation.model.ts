@@ -54,3 +54,21 @@ export interface OperationMetricsDto {
   monthlyExecutionCount: number;
   recentExecutions: OperationHistoryDto[];
 }
+
+export interface WeatherData {
+  latitude?: number;
+  longitude?: number;
+  temperature?: number;
+  humidity?: number;
+  windSpeed?: number;
+  weatherCode?: number;
+  weatherCondition?: string;
+  weatherIcon?: string;
+  time?: string;
+}
+
+export interface ParsedJsonEntry {
+  key: string;
+  value: string;
+  isObject: boolean;
+}

@@ -43,9 +43,13 @@
         <button type="button" class="btn-chip" (click)="fillExample('celsius')">🌡️ Celsius/Fahrenheit</button>
         <button type="button" class="btn-chip" (click)="fillExample('greeting')">💬 Greeting</button>
         <button type="button" class="btn-chip" (click)="fillExample('hypotenuse')">📐 Hypotenuse</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('weather')">⛅ Weather (API)</button>
         <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('crypto')">🪙 Crypto (API)</button>
         <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('catfact')">🐱 Cat Fact (API)</button>
         <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('agify')">🔮 Agify (API)</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('exchange')">💱 Forex Rates (API)</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('country')">🌍 Country (API)</button>
+        <button type="button" class="btn-chip btn-chip-api" (click)="fillExample('github')">👤 GitHub User (API)</button>
       </div>
     </div>
 
@@ -56,6 +60,12 @@
         <div class="api-guide-text">
           <strong>External REST API Integration:</strong>
           <span>Specify an HTTP/HTTPS endpoint in the Rule Template. Use <code>&#123;A&#125;</code> and <code>&#123;B&#125;</code> for dynamic parameter substitution (path variables or query parameters). Operands are automatically URL-encoded before dispatch.</span>
+          @if (resolvedRulePreview) {
+            <div class="api-preview-box">
+              <span class="preview-label">Live Parameter Substitution Preview:</span>
+              <code class="preview-code">{{ resolvedRulePreview }}</code>
+            </div>
+          }
         </div>
       </div>
     }

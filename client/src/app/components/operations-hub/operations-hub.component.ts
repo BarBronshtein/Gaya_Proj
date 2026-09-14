@@ -194,7 +194,15 @@ export class OperationsHubComponent implements OnInit {
     this.router.navigate(['/calculator'], { queryParams: { key } });
   }
 
-  fillExample(type: 'discount' | 'celsius' | 'greeting' | 'hypotenuse' | 'crypto' | 'catfact' | 'agify'): void {
+  get resolvedRulePreview(): string {
+    const tmpl = (this.newOp.ruleTemplate || '').trim();
+    if (!this.isExternalApi || !tmpl) return '';
+    const sampleA = (this.newOp.fieldAPrompt || 'sampleA').split(' ')[0].replace(/[^a-zA-Z0-9]/g, '') || 'sampleA';
+    const sampleB = (this.newOp.fieldBPrompt || 'sampleB').split(' ')[0].replace(/[^a-zA-Z0-9]/g, '') || 'sampleB';
+    return tmpl.replace(/{A}/gi, encodeURIComponent(sampleA)).replace(/{B}/gi, encodeURIComponent(sampleB));
+  }
+
+  fillExample(type: 'discount' | 'celsius' | 'greeting' | 'hypotenuse' | 'weather' | 'crypto' | 'catfact' | 'agify' | 'exchange' | 'country' | 'github'): void {
     if (type === 'discount') {
       this.newOp = {
         key: 'discount-calc',
@@ -239,6 +247,17 @@ export class OperationsHubComponent implements OnInit {
         description: 'Computes hypotenuse c = sqrt(a^2 + b^2)',
         isActive: true
       };
+    } else if (type === 'weather') {
+      this.newOp = {
+        key: 'open-meteo-forecast',
+        displayName: 'Live Weather Forecast API',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://api.open-meteo.com/v1/forecast?latitude={A}&longitude={B}&current=temperature_2m,relative_humidity_2m,wind_speed_10m',
+        fieldAPrompt: 'Latitude (קו רוחב)',
+        fieldBPrompt: 'Longitude (קו אורך)',
+        description: 'Fetches real-time temperature, humidity, and wind speed from Open-Meteo REST API',
+        isActive: true
+      };
     } else if (type === 'crypto') {
       this.newOp = {
         key: 'crypto-price',
@@ -270,6 +289,39 @@ export class OperationsHubComponent implements OnInit {
         fieldAPrompt: 'First Name (e.g. michael)',
         fieldBPrompt: 'Country Code (e.g. IL, US)',
         description: 'Predicts demographic age based on given name and country code',
+        isActive: true
+      };
+    } else if (type === 'exchange') {
+      this.newOp = {
+        key: 'exchange-rate',
+        displayName: 'Forex Exchange Rates API',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://open.er-api.com/v6/latest/{A}',
+        fieldAPrompt: 'Base Currency Code (e.g. USD, EUR, ILS)',
+        fieldBPrompt: 'Unused (Enter 0)',
+        description: 'Fetches real-time international foreign exchange rates against base currency',
+        isActive: true
+      };
+    } else if (type === 'country') {
+      this.newOp = {
+        key: 'country-info',
+        displayName: 'Country Details API (REST Countries)',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://restcountries.com/v3.1/name/{A}',
+        fieldAPrompt: 'Country Name (e.g. Israel, United States)',
+        fieldBPrompt: 'Unused (Enter 0)',
+        description: 'Fetches population, capital city, region, and subregion for given country',
+        isActive: true
+      };
+    } else if (type === 'github') {
+      this.newOp = {
+        key: 'github-user',
+        displayName: 'GitHub Profile Lookup API',
+        category: 'ExternalApi',
+        ruleTemplate: 'https://api.github.com/users/{A}',
+        fieldAPrompt: 'GitHub Username (e.g. angular, dotnet)',
+        fieldBPrompt: 'Unused (Enter 0)',
+        description: 'Retrieves public user profile info, repository count, and follower count from GitHub',
         isActive: true
       };
     }
